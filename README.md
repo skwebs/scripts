@@ -46,7 +46,9 @@ irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-arm64
 
 ```powershell
 irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-build-system.ps1 | iex
-``` performance
+```
+
+#### Performance
 - Optimized for modern Android phones
 - Excludes unnecessary CPU architectures
 
