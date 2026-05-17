@@ -7,6 +7,7 @@ Write-Host "Starting Expo Build System Setup..." `
 $scriptDir = "scripts"
 
 if (!(Test-Path $scriptDir)) {
+
     New-Item `
         -ItemType Directory `
         -Path $scriptDir `
@@ -29,13 +30,28 @@ $env:BUILD_TYPE = "dev"
 
 npx expo prebuild
 
-cd android
+if ($LASTEXITCODE -ne 0) {
+    Write-Host `
+    "Expo prebuild failed" `
+    -ForegroundColor Red
+    exit 1
+}
+
+Push-Location android
 
 .\gradlew assembleDebug
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Host `
+    "Debug build failed" `
+    -ForegroundColor Red
+
+    Pop-Location
+    exit 1
+}
+
 adb install -r `
-.\app\build\outputs\apk\debug\
-app-debug.apk
+.\app\build\outputs\apk\debug\app-debug.apk
 
 Write-Host `
 "Dev Build Installed Successfully" `
@@ -43,6 +59,8 @@ Write-Host `
 
 explorer `
 .\app\build\outputs\apk\debug
+
+Pop-Location
 '@
 
 Set-Content `
@@ -66,15 +84,30 @@ $env:BUILD_TYPE = "release"
 
 npx expo prebuild
 
-cd android
+if ($LASTEXITCODE -ne 0) {
+    Write-Host `
+    "Expo prebuild failed" `
+    -ForegroundColor Red
+    exit 1
+}
+
+Push-Location android
 
 .\gradlew clean
 
 .\gradlew assembleRelease
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Host `
+    "Release build failed" `
+    -ForegroundColor Red
+
+    Pop-Location
+    exit 1
+}
+
 adb install -r `
-.\app\build\outputs\apk\release\
-app-release.apk
+.\app\build\outputs\apk\release\app-release.apk
 
 Write-Host `
 "Release Build Installed Successfully" `
@@ -82,11 +115,12 @@ Write-Host `
 
 keytool -printcert `
 -jarfile `
-.\app\build\outputs\apk\release\
-app-release.apk
+.\app\build\outputs\apk\release\app-release.apk
 
 explorer `
 .\app\build\outputs\apk\release
+
+Pop-Location
 '@
 
 Set-Content `
@@ -104,6 +138,7 @@ Write-Host `
 $packagePath = "package.json"
 
 if (!(Test-Path $packagePath)) {
+
     Write-Host `
     "package.json not found!" `
     -ForegroundColor Red
@@ -121,6 +156,7 @@ $packagePath -Raw |
 ConvertFrom-Json
 
 if ($null -eq $package.scripts) {
+
     $package |
     Add-Member `
     -MemberType NoteProperty `
@@ -128,7 +164,7 @@ if ($null -eq $package.scripts) {
     -Value ([PSCustomObject]@{})
 }
 
-# Add build:dev
+# build:dev
 $devCommand =
 "powershell -ExecutionPolicy Bypass -File ./scripts/dev-build.ps1"
 
@@ -137,10 +173,12 @@ $package.scripts.PSObject.Properties[
 "build:dev"
 ]
 ) {
+
     $package.scripts."build:dev" =
     $devCommand
 }
 else {
+
     $package.scripts |
     Add-Member `
     -MemberType NoteProperty `
@@ -148,7 +186,7 @@ else {
     -Value $devCommand
 }
 
-# Add build:release
+# build:release
 $releaseCommand =
 "powershell -ExecutionPolicy Bypass -File ./scripts/release-build.ps1"
 
@@ -157,10 +195,12 @@ $package.scripts.PSObject.Properties[
 "build:release"
 ]
 ) {
+
     $package.scripts."build:release" =
     $releaseCommand
 }
 else {
+
     $package.scripts |
     Add-Member `
     -MemberType NoteProperty `
@@ -179,30 +219,45 @@ Write-Host `
 -ForegroundColor Green
 
 # ==========================================================
-# 5. Create app.config.js
+# 5. Create app.config.js wrapper
 # ==========================================================
+$appJsonPath = "app.json"
 $appConfigPath = "app.config.js"
 
-if (!(Test-Path $appConfigPath)) {
+if (!(Test-Path $appJsonPath)) {
+
+    Write-Host `
+    "app.json not found!" `
+    -ForegroundColor Red
+
+    Write-Host `
+    "Skipping app.config.js creation" `
+    -ForegroundColor Yellow
+}
+elseif (!(Test-Path $appConfigPath)) {
 
 $appConfig = @'
-export default ({ config }) => {
+const appJson = require("./app.json");
+
+module.exports = ({ config }) => {
   const isRelease =
     process.env.BUILD_TYPE === "release";
 
   return {
-    ...config,
+    ...appJson.expo,
 
     name: isRelease
-      ? "Finance SMS POC"
-      : "Finance SMS POC Dev",
+      ? appJson.expo.name
+      : `${appJson.expo.name} Dev`,
+
+    slug: appJson.expo.slug,
 
     android: {
-      ...config.android,
+      ...appJson.expo.android,
 
       package: isRelease
-        ? "com.skwebs.financesmspoc"
-        : "com.skwebs.financesmspoc.dev"
+        ? appJson.expo.android.package
+        : `${appJson.expo.android.package}.dev`
     }
   };
 };
@@ -213,11 +268,16 @@ Set-Content `
 -Value $appConfig `
 -Encoding UTF8
 
-Write-Host `
-"Created app.config.js" `
--ForegroundColor Green
+    Write-Host `
+    "Created app.config.js wrapper" `
+    -ForegroundColor Green
+
+    Write-Host `
+    "IMPORTANT: Run once -> npx expo prebuild --clean" `
+    -ForegroundColor Yellow
 }
 else {
+
     Write-Host `
     "app.config.js already exists" `
     -ForegroundColor Yellow
@@ -230,7 +290,7 @@ $keystorePath =
 "android\keystore.properties.example"
 
 $keystoreContent = @'
-storeFile=D:\\Secure\\AndroidKeys\\FinanceSMS\\finance-release.keystore
+storeFile=D:\\Satish\\Secure\\AndroidKeys\\FinanceSMS\\finance-release.keystore
 storePassword=your_password
 keyAlias=financekey
 keyPassword=your_password
@@ -257,6 +317,7 @@ $entries = @(
 )
 
 if (!(Test-Path $gitignore)) {
+
     New-Item `
     -ItemType File `
     -Path $gitignore `
@@ -269,7 +330,9 @@ $gitignore `
 -ErrorAction SilentlyContinue
 
 foreach ($entry in $entries) {
+
     if ($content -notcontains $entry) {
+
         Add-Content `
         -Path $gitignore `
         -Value $entry
@@ -281,7 +344,7 @@ Write-Host `
 -ForegroundColor Green
 
 # ==========================================================
-# 8. Done
+# 8. Final message
 # ==========================================================
 Write-Host ""
 Write-Host `
@@ -295,6 +358,15 @@ Write-Host `
 Write-Host `
 "=====================================" `
 -ForegroundColor Green
+
+Write-Host ""
+Write-Host `
+"IMPORTANT (One Time):" `
+-ForegroundColor Yellow
+
+Write-Host `
+"npx expo prebuild --clean" `
+-ForegroundColor White
 
 Write-Host ""
 Write-Host `
