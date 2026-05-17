@@ -1,37 +1,52 @@
-# Expo ARM64 Setup Script
+# SK Webs Scripts
 
-Automatically configure your Expo Android project to build **ARM64-only APKs (`arm64-v8a`)**.
+Reusable scripts for:
 
-This repository provides scripts for:
-
-- **Windows** → PowerShell (`.ps1`)
-- **Linux / macOS / Termux** → Shell (`.sh`)
-
-The script automatically configures your Expo project to generate **ARM64-only Android builds**, reducing APK size and improving performance for modern Android devices.
-
----
-
-## Features
-
-This setup automatically:
-
-- ✅ Creates `plugins/withArm64Only.js`
-- ✅ Installs `expo-build-properties`
-- ✅ Updates `package.json`
-- ✅ Adds `build:arm64` build command
-- ✅ Updates `app.json`
-- ✅ Configures `arm64-v8a` ABI filter
-- ✅ Prevents duplicate config (safe to run multiple times)
+- Expo
+- React Native
+- Android
+- PowerShell
+- Build automation
 
 ---
 
-## Why ARM64-only?
+# Available Scripts
 
-### Benefits
+## Expo Android
 
-- Smaller APK size
-- Faster installation
-- Better performance
+| Script | Purpose |
+|--------|---------|
+| `setup-arm64.ps1` | Configure ARM64-only build |
+| `setup-build-system.ps1` | Setup dev/release build automation |
+
+---
+
+# Documentation
+
+## Build System
+
+- [Expo Android Build Guide](docs/EXPO_ANDROID_BUILD_GUIDE.md)
+- [Build System Guide](docs/BUILD_SYSTEM_GUIDE.md)
+
+## Android Optimization
+
+- [ARM64 Setup Guide](docs/ARM64_SETUP_GUIDE.md)
+
+---
+
+# Quick Start
+
+### ARM64 Setup
+
+```powershell
+irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-arm64.ps1 | iex
+```
+
+### Build System Setup
+
+```powershell
+irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-build-system.ps1 | iex
+``` performance
 - Optimized for modern Android phones
 - Excludes unnecessary CPU architectures
 
