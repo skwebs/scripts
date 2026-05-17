@@ -1,140 +1,142 @@
-# Expo Android Build System Guide
-### Expo SDK 55+ (or Latest) + React Native + Expo Router
+[← Back to README](../README.md)
 
-This guide explains the complete Android build workflow using:
+# Expo Android Build Guide
+### Expo SDK 55+ (or Latest)
 
-```powershell
-irm https://raw.githubusercontent.com/skwebs/scripts/main/setup-build-system.ps1 | iex
-```
+This guide provides a quick overview of Android build setup for Expo projects.
 
-This setup automatically configures:
+For detailed setup, see:
 
-- Development build system
-- Release build system
-- APK auto-install
-- APK output folder opening
-- npm scripts
-- `.gitignore`
-- `app.config.js` wrapper
-- Keystore template
-- Dev/Release app separation
-- Expo SDK 55+ compatible setup
+- [Build System Guide](BUILD_SYSTEM_GUIDE.md)
+- [ARM64 Setup Guide](ARM64_SETUP_GUIDE.md)
 
 ---
 
-# 1. One-Time Setup
+# Available Setup Scripts
+
+## 1. Build System Setup
+
+Automates:
+
+- Development build
+- Release build
+- APK auto-install
+- ADB integration
+- `app.json + app.config.js` setup
+- Keystore template
+- Dev/Release app separation
 
 Run:
 
 ```powershell
-irm https://raw.githubusercontent.com/skwebs/scripts/main/setup-build-system.ps1 | iex
+irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-build-system.ps1 | iex
 ```
 
-This automatically creates everything needed.
-
----
-
-# 2. What Setup Script Creates
-
-## Scripts Folder
-
-Creates:
+Documentation:
 
 ```text
-scripts/
-├── dev-build.ps1
-└── release-build.ps1
+docs/BUILD_SYSTEM_GUIDE.md
 ```
 
 ---
 
-## Package.json Scripts
+## 2. ARM64 APK Setup
 
-Automatically adds:
-
-```json
-{
-  "scripts": {
-    "build:dev": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-build.ps1",
-    "build:release": "powershell -ExecutionPolicy Bypass -File ./scripts/release-build.ps1"
-  }
-}
-```
-
----
-
-## `app.config.js` Wrapper
-
-If `app.json` exists, setup creates:
+Optimizes Android APK builds for:
 
 ```text
-app.config.js
+arm64-v8a
 ```
 
-This is a **wrapper around `app.json`**.
+Benefits:
 
-### Important
+- Smaller APK size
+- Better performance
+- Modern Android compatibility
 
-This does **NOT** replace:
+Run:
+
+```powershell
+irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-arm64.ps1 | iex
+```
+
+Documentation:
 
 ```text
-app.json
-```
-
-Both files exist together.
-
-Recommended structure:
-
-```text
-app.json
-app.config.js
-```
-
-### Why?
-
-This is the ideal Expo setup.
-
-- `app.json` → static config
-- `app.config.js` → dynamic overrides
-
-Safer for:
-
-- Expo SDK upgrades
-- Expo Router
-- plugins
-- permissions
-- splash screen
-- icons
-- prebuild workflow
-
----
-
-# 3. How `app.json` + `app.config.js` Work Together
-
-### `app.json`
-
-Stores static configuration:
-
-```json
-{
-  "expo": {
-    "name": "Finance SMS POC",
-    "slug": "finance-sms-poc",
-
-    "android": {
-      "package": "com.skwebs.financesmspoc"
-    }
-  }
-}
+docs/ARM64_SETUP_GUIDE.md
 ```
 
 ---
 
-### `app.config.js`
+# Recommended Workflow
 
-Only changes dynamic values.
+## Step 1 — Setup Build System
 
-Automatically switches:
+Run:
+
+```powershell
+irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-build-system.ps1 | iex
+```
+
+---
+
+## Step 2 — Clean Native (One Time)
+
+Run once:
+
+```bash
+npx expo prebuild --clean
+```
+
+---
+
+## Step 3 — Optional ARM64 Optimization
+
+Run:
+
+```powershell
+irm https://raw.githubusercontent.com/skwebs/scripts/main/powershell/setup-arm64.ps1 | iex
+```
+
+---
+
+## Step 4 — Development Build
+
+Run:
+
+```bash
+npm run build:dev
+```
+
+---
+
+## Step 5 — Release Build
+
+Run:
+
+```bash
+npm run build:release
+```
+
+---
+
+# Recommended Documentation Order
+
+1. `EXPO_ANDROID_BUILD_GUIDE.md` ← start here
+2. `BUILD_SYSTEM_GUIDE.md`
+3. `ARM64_SETUP_GUIDE.md`
+
+---
+
+## Related Documentation
+
+- [Build System Guide](BUILD_SYSTEM_GUIDE.md)
+- [ARM64 Setup Guide](ARM64_SETUP_GUIDE.md)
+- [Documentation Index](INDEX.md)
+
+---
+
+[← Back to README](../README.md)Automatically switches:
 
 ### Development
 
