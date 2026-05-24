@@ -28,13 +28,23 @@ Write-Host `
 
 $env:BUILD_TYPE = "dev"
 
-npx expo prebuild
+# Auto prebuild if android folder missing
+if (!(Test-Path "android")) {
 
-if ($LASTEXITCODE -ne 0) {
     Write-Host `
-    "Expo prebuild failed" `
-    -ForegroundColor Red
-    exit 1
+    "Android folder missing. Running Expo prebuild..." `
+    -ForegroundColor Yellow
+
+    npx expo prebuild --clean
+
+    if ($LASTEXITCODE -ne 0) {
+
+        Write-Host `
+        "Expo prebuild failed" `
+        -ForegroundColor Red
+
+        exit 1
+    }
 }
 
 Push-Location android
@@ -42,6 +52,7 @@ Push-Location android
 .\gradlew assembleDebug
 
 if ($LASTEXITCODE -ne 0) {
+
     Write-Host `
     "Debug build failed" `
     -ForegroundColor Red
@@ -82,22 +93,32 @@ Write-Host `
 
 $env:BUILD_TYPE = "release"
 
-npx expo prebuild
+# Auto prebuild if android folder missing
+if (!(Test-Path "android")) {
 
-if ($LASTEXITCODE -ne 0) {
     Write-Host `
-    "Expo prebuild failed" `
-    -ForegroundColor Red
-    exit 1
+    "Android folder missing. Running Expo prebuild..." `
+    -ForegroundColor Yellow
+
+    npx expo prebuild --clean
+
+    if ($LASTEXITCODE -ne 0) {
+
+        Write-Host `
+        "Expo prebuild failed" `
+        -ForegroundColor Red
+
+        exit 1
+    }
 }
 
 Push-Location android
 
 .\gradlew clean
-
 .\gradlew assembleRelease
 
 if ($LASTEXITCODE -ne 0) {
+
     Write-Host `
     "Release build failed" `
     -ForegroundColor Red
@@ -164,49 +185,11 @@ if ($null -eq $package.scripts) {
     -Value ([PSCustomObject]@{})
 }
 
-# build:dev
-$devCommand =
+$package.scripts."build:dev" =
 "powershell -ExecutionPolicy Bypass -File ./scripts/dev-build.ps1"
 
-if (
-$package.scripts.PSObject.Properties[
-"build:dev"
-]
-) {
-
-    $package.scripts."build:dev" =
-    $devCommand
-}
-else {
-
-    $package.scripts |
-    Add-Member `
-    -MemberType NoteProperty `
-    -Name "build:dev" `
-    -Value $devCommand
-}
-
-# build:release
-$releaseCommand =
+$package.scripts."build:release" =
 "powershell -ExecutionPolicy Bypass -File ./scripts/release-build.ps1"
-
-if (
-$package.scripts.PSObject.Properties[
-"build:release"
-]
-) {
-
-    $package.scripts."build:release" =
-    $releaseCommand
-}
-else {
-
-    $package.scripts |
-    Add-Member `
-    -MemberType NoteProperty `
-    -Name "build:release" `
-    -Value $releaseCommand
-}
 
 $package |
 ConvertTo-Json -Depth 100 |
@@ -230,11 +213,10 @@ if (!(Test-Path $appJsonPath)) {
     "app.json not found!" `
     -ForegroundColor Red
 
-    Write-Host `
-    "Skipping app.config.js creation" `
-    -ForegroundColor Yellow
+    exit 1
 }
-elseif (!(Test-Path $appConfigPath)) {
+
+if (!(Test-Path $appConfigPath)) {
 
 $appConfig = @'
 const appJson = require("./app.json");
@@ -271,10 +253,6 @@ Set-Content `
     Write-Host `
     "Created app.config.js wrapper" `
     -ForegroundColor Green
-
-    Write-Host `
-    "IMPORTANT: Run once -> npx expo prebuild --clean" `
-    -ForegroundColor Yellow
 }
 else {
 
@@ -284,7 +262,28 @@ else {
 }
 
 # ==========================================================
-# 6. Create keystore.properties.example
+# 6. Auto prebuild if android folder missing
+# ==========================================================
+if (!(Test-Path "android")) {
+
+    Write-Host `
+    "Android folder missing. Running Expo prebuild..." `
+    -ForegroundColor Yellow
+
+    npx expo prebuild --clean
+
+    if ($LASTEXITCODE -ne 0) {
+
+        Write-Host `
+        "Expo prebuild failed" `
+        -ForegroundColor Red
+
+        exit 1
+    }
+}
+
+# ==========================================================
+# 7. Create keystore.properties.example
 # ==========================================================
 $keystorePath =
 "android\keystore.properties.example"
@@ -306,18 +305,18 @@ Write-Host `
 -ForegroundColor Cyan
 
 # ==========================================================
-# 7. Update .gitignore
+# 8. Update .gitignore
 # ==========================================================
 $gitignore = ".gitignore"
 
 $entries = @(
 "*.keystore",
 "*.jks",
-"android/keystore.properties"
+"android/keystore.properties",
+"android/keystore.properties.example"
 )
 
 if (!(Test-Path $gitignore)) {
-
     New-Item `
     -ItemType File `
     -Path $gitignore `
@@ -344,7 +343,7 @@ Write-Host `
 -ForegroundColor Green
 
 # ==========================================================
-# 8. Final message
+# 9. Final message
 # ==========================================================
 Write-Host ""
 Write-Host `
@@ -358,15 +357,6 @@ Write-Host `
 Write-Host `
 "=====================================" `
 -ForegroundColor Green
-
-Write-Host ""
-Write-Host `
-"IMPORTANT (One Time):" `
--ForegroundColor Yellow
-
-Write-Host `
-"npx expo prebuild --clean" `
--ForegroundColor White
 
 Write-Host ""
 Write-Host `
