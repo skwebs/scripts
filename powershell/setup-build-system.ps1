@@ -1,5 +1,5 @@
 Write-Host "Starting Expo Build System Setup..." `
--ForegroundColor Green
+    -ForegroundColor Green
 
 # ==========================================================
 # 1. Create scripts folder
@@ -14,8 +14,8 @@ if (!(Test-Path $scriptDir)) {
         -Force | Out-Null
 
     Write-Host `
-    "Created scripts folder" `
-    -ForegroundColor Green
+        "Created scripts folder" `
+        -ForegroundColor Green
 }
 
 # ==========================================================
@@ -75,13 +75,13 @@ Pop-Location
 '@
 
 Set-Content `
--Path "scripts\dev-build.ps1" `
--Value $devScript `
--Encoding UTF8
+    -Path "scripts\dev-build.ps1" `
+    -Value $devScript `
+    -Encoding UTF8
 
 Write-Host `
-"Created dev-build.ps1" `
--ForegroundColor Cyan
+    "Created dev-build.ps1" `
+    -ForegroundColor Cyan
 
 # ==========================================================
 # 3. Create release-build.ps1
@@ -134,10 +134,6 @@ Write-Host `
 "Release Build Installed Successfully" `
 -ForegroundColor Green
 
-keytool -printcert `
--jarfile `
-.\app\build\outputs\apk\release\app-release.apk
-
 explorer `
 .\app\build\outputs\apk\release
 
@@ -145,61 +141,122 @@ Pop-Location
 '@
 
 Set-Content `
--Path "scripts\release-build.ps1" `
--Value $releaseScript `
--Encoding UTF8
+    -Path "scripts\release-build.ps1" `
+    -Value $releaseScript `
+    -Encoding UTF8
 
 Write-Host `
-"Created release-build.ps1" `
--ForegroundColor Cyan
+    "Created release-build.ps1" `
+    -ForegroundColor Cyan
 
 # ==========================================================
-# 4. Update package.json
+# 4. Update package.json safely
 # ==========================================================
 $packagePath = "package.json"
 
 if (!(Test-Path $packagePath)) {
 
     Write-Host `
-    "package.json not found!" `
-    -ForegroundColor Red
+        "package.json not found!" `
+        -ForegroundColor Red
 
     exit 1
 }
 
 Write-Host `
-"Updating package.json..." `
--ForegroundColor Yellow
+    "Updating package.json..." `
+    -ForegroundColor Yellow
 
 $package =
 Get-Content `
-$packagePath -Raw |
+    $packagePath -Raw |
 ConvertFrom-Json
 
+# Ensure scripts exists
 if ($null -eq $package.scripts) {
 
     $package |
     Add-Member `
-    -MemberType NoteProperty `
-    -Name scripts `
-    -Value ([PSCustomObject]@{})
+        -MemberType NoteProperty `
+        -Name scripts `
+        -Value ([PSCustomObject]@{})
 }
 
-$package.scripts."build:dev" =
+# -----------------------------
+# build:dev
+# -----------------------------
+$devCommand =
 "powershell -ExecutionPolicy Bypass -File ./scripts/dev-build.ps1"
 
-$package.scripts."build:release" =
+if (
+    $null -eq
+    $package.scripts.PSObject.Properties[
+    "build:dev"
+    ]
+) {
+
+    $package.scripts |
+    Add-Member `
+        -MemberType NoteProperty `
+        -Name "build:dev" `
+        -Value $devCommand
+
+    Write-Host `
+        "Added build:dev script" `
+        -ForegroundColor Green
+}
+else {
+
+    $package.scripts."build:dev" =
+    $devCommand
+
+    Write-Host `
+        "Updated build:dev script" `
+        -ForegroundColor Cyan
+}
+
+# -----------------------------
+# build:release
+# -----------------------------
+$releaseCommand =
 "powershell -ExecutionPolicy Bypass -File ./scripts/release-build.ps1"
+
+if (
+    $null -eq
+    $package.scripts.PSObject.Properties[
+    "build:release"
+    ]
+) {
+
+    $package.scripts |
+    Add-Member `
+        -MemberType NoteProperty `
+        -Name "build:release" `
+        -Value $releaseCommand
+
+    Write-Host `
+        "Added build:release script" `
+        -ForegroundColor Green
+}
+else {
+
+    $package.scripts."build:release" =
+    $releaseCommand
+
+    Write-Host `
+        "Updated build:release script" `
+        -ForegroundColor Cyan
+}
 
 $package |
 ConvertTo-Json -Depth 100 |
 Set-Content `
-$packagePath `
--Encoding UTF8
+    $packagePath `
+    -Encoding UTF8
 
 Write-Host `
-"Updated package.json" `
--ForegroundColor Green
+    "Updated package.json successfully" `
+    -ForegroundColor Green
 
 # ==========================================================
 # 5. Create app.config.js wrapper
@@ -210,15 +267,15 @@ $appConfigPath = "app.config.js"
 if (!(Test-Path $appJsonPath)) {
 
     Write-Host `
-    "app.json not found!" `
-    -ForegroundColor Red
+        "app.json not found!" `
+        -ForegroundColor Red
 
     exit 1
 }
 
 if (!(Test-Path $appConfigPath)) {
 
-$appConfig = @'
+    $appConfig = @'
 const appJson = require("./app.json");
 
 module.exports = ({ config }) => {
@@ -245,38 +302,32 @@ module.exports = ({ config }) => {
 };
 '@
 
-Set-Content `
--Path $appConfigPath `
--Value $appConfig `
--Encoding UTF8
+    Set-Content `
+        -Path $appConfigPath `
+        -Value $appConfig `
+        -Encoding UTF8
 
     Write-Host `
-    "Created app.config.js wrapper" `
-    -ForegroundColor Green
-}
-else {
-
-    Write-Host `
-    "app.config.js already exists" `
-    -ForegroundColor Yellow
+        "Created app.config.js wrapper" `
+        -ForegroundColor Green
 }
 
 # ==========================================================
-# 6. Auto prebuild if android folder missing
+# 6. Auto prebuild
 # ==========================================================
 if (!(Test-Path "android")) {
 
     Write-Host `
-    "Android folder missing. Running Expo prebuild..." `
-    -ForegroundColor Yellow
+        "Android folder missing. Running Expo prebuild..." `
+        -ForegroundColor Yellow
 
     npx expo prebuild --clean
 
     if ($LASTEXITCODE -ne 0) {
 
         Write-Host `
-        "Expo prebuild failed" `
-        -ForegroundColor Red
+            "Expo prebuild failed" `
+            -ForegroundColor Red
 
         exit 1
     }
@@ -296,13 +347,13 @@ keyPassword=your_password
 '@
 
 Set-Content `
--Path $keystorePath `
--Value $keystoreContent `
--Encoding UTF8
+    -Path $keystorePath `
+    -Value $keystoreContent `
+    -Encoding UTF8
 
 Write-Host `
-"Created keystore.properties.example" `
--ForegroundColor Cyan
+    "Created keystore.properties.example" `
+    -ForegroundColor Cyan
 
 # ==========================================================
 # 8. Update .gitignore
@@ -310,63 +361,63 @@ Write-Host `
 $gitignore = ".gitignore"
 
 $entries = @(
-"*.keystore",
-"*.jks",
-"android/keystore.properties",
-"android/keystore.properties.example"
+    "*.keystore",
+    "*.jks",
+    "android/keystore.properties"
 )
 
 if (!(Test-Path $gitignore)) {
+
     New-Item `
-    -ItemType File `
-    -Path $gitignore `
-    -Force | Out-Null
+        -ItemType File `
+        -Path $gitignore `
+        -Force | Out-Null
 }
 
 $content =
 Get-Content `
-$gitignore `
--ErrorAction SilentlyContinue
+    $gitignore `
+    -ErrorAction SilentlyContinue
 
 foreach ($entry in $entries) {
 
     if ($content -notcontains $entry) {
 
         Add-Content `
-        -Path $gitignore `
-        -Value $entry
+            -Path $gitignore `
+            -Value $entry
     }
 }
 
 Write-Host `
-"Updated .gitignore" `
--ForegroundColor Green
+    "Updated .gitignore" `
+    -ForegroundColor Green
 
 # ==========================================================
-# 9. Final message
+# 9. Final Message
 # ==========================================================
 Write-Host ""
 Write-Host `
-"=====================================" `
--ForegroundColor Green
+    "=====================================" `
+    -ForegroundColor Green
 
 Write-Host `
-"Expo Build System Setup Complete!" `
--ForegroundColor Green
+    "Expo Build System Setup Complete!" `
+    -ForegroundColor Green
 
 Write-Host `
-"=====================================" `
--ForegroundColor Green
+    "=====================================" `
+    -ForegroundColor Green
 
 Write-Host ""
 Write-Host `
-"Available Commands:" `
--ForegroundColor Cyan
+    "Available Commands:" `
+    -ForegroundColor Cyan
 
 Write-Host `
-"npm run build:dev" `
--ForegroundColor White
+    "npm run build:dev" `
+    -ForegroundColor White
 
 Write-Host `
-"npm run build:release" `
--ForegroundColor White
+    "npm run build:release" `
+    -ForegroundColor White
